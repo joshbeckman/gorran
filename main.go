@@ -9,6 +9,7 @@ import (
 	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -30,7 +31,7 @@ func main() {
 }
 
 func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
-	db := ctl.session.Clone().DB("audrey")
+	db := ctl.session.Clone().DB(os.Getenv("MONGO_DB"))
 	result := Account{}
 	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
 	if err != nil {
@@ -64,7 +65,6 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	c.SetiTunesOwner(acct.Username, acct.Email)
 
 	for iter.Next(&result) {
-		fmt.Println(result)
 		resultLink := []string{"http://narro.co/article/", result.Id.Hex()}
 		resultDesc := []string{result.Description, result.Url}
 		i := &gopod.Item{
