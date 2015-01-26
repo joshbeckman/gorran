@@ -50,7 +50,7 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	title := []string{acct.Username, " on Narro"}
 	desc := []string{acct.Username, " uses Narro to create a podcast of articles transcribed to audio."}
 	link := []string{"http://on.narro.co/", acct.Vanity}
-	c := gopod.ChannelFactory(strings.Join(title, ""), strings.Join(link, ""), strings.Join(desc, ""), "http://narro.co/images/narro-icon.png")
+	c := gopod.ChannelFactory(strings.Join(title, ""), strings.Join(link, ""), strings.Join(desc, ""), "http://www.narro.co/images/narro-icon-lg.png")
 
 	c.SetTTL("20") // in minutes
 	c.SetPubDate(time.Now().UTC().Format(time.RFC822))
