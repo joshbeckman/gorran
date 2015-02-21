@@ -65,12 +65,13 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	c.SetiTunesOwner(acct.Username, acct.Email)
 
 	for iter.Next(&result) {
+		linkList := listLinks(result.Links)
 		resultLink := []string{"http://narro.co/article/", result.Id.Hex()}
-		resultDesc := []string{result.Description, result.Url}
+		resultDesc := []string{result.Description, result.Url, linkList}
 		i := &gopod.Item{
 			Title:         result.Title,
 			Link:          strings.Join(resultLink, ""),
-			Description:   strings.Join(resultDesc, " ... "),
+			Description:   strings.Join(resultDesc, "<br/> "),
 			PubDate:       result.Created.UTC().Format(time.RFC822),
 			Author:        acct.Email,
 			Guid:          strings.Join(resultLink, ""),
@@ -88,4 +89,17 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	}
 
 	return c
+}
+
+func listLinks(Links []*ArticleLink) string {
+	results := make([]string, len(Links)+2)
+	results = append(results, "<ul class=\"linkList\">")
+	for _, r := range Links {
+		link := "<li><a href=\"first\">second</a></li>"
+		link = strings.Replace(link, "first", r.Href, 1)
+		link = strings.Replace(link, "second", r.Text, 1)
+		results = append(results, link)
+	}
+	results = append(results, "</ul>")
+	return strings.Join(results, "")
 }

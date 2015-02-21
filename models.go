@@ -28,6 +28,6 @@ type Article struct {
 
 type ArticleLink struct {
 	Id   bson.ObjectId `bson:"_id" json:"_id"`
-	href string
-	text string
+	Href string
+	Text string
 }
