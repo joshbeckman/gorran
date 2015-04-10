@@ -53,7 +53,7 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	c := gopod.ChannelFactory(strings.Join(title, ""), strings.Join(link, ""), strings.Join(desc, ""), "http://www.narro.co/images/narro-icon-lg.png")
 
 	c.SetTTL("20") // in minutes
-	c.SetPubDate(time.Now().UTC().Format(time.RFC822))
+	c.SetPubDate(time.Now().UTC().Format(time.RFC1123))
 	c.SetLanguage("en")
 	c.SetWebMaster("josh@narro.co")
 	c.SetManagingEditor(acct.Email)
@@ -72,7 +72,7 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 			Title:         result.Title,
 			Link:          strings.Join(resultLink, ""),
 			Description:   strings.Join(resultDesc, "<br/> "),
-			PubDate:       result.Created.UTC().Format(time.RFC822),
+			PubDate:       result.Created.UTC().Format(time.RFC1123),
 			Author:        acct.Email,
 			Guid:          strings.Join(resultLink, ""),
 			TunesDuration: strconv.FormatFloat(result.Mp3Length, 'f', 0, 64),
