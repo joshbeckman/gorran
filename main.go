@@ -38,7 +38,7 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else {
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex()}).Sort("-created").Limit(100).Iter()
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex()}).Sort("-created").Limit(25).Iter()
 		s := buildPodcast(iter, result)
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
