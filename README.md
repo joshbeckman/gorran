@@ -1,6 +1,8 @@
 # gorran
 So if I'm going to learn, I must do it by listening.
 
+Powering [on.narro.co](http://on.narro.co).
+
 ## Deploy notes
 ```
 go get github.com/kr/godep
