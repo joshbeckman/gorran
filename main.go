@@ -47,8 +47,8 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 
 func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	var result Article
-	title := []string{acct.Username, " on Narro"}
-	desc := []string{acct.Username, " uses Narro to create a podcast of articles transcribed to audio."}
+	title := []string{acct.Vanity, " on Narro"}
+	desc := []string{acct.Vanity, " uses Narro to create a podcast of articles transcribed to audio."}
 	link := []string{"http://on.narro.co/", acct.Vanity}
 	c := gopod.ChannelFactory(strings.Join(title, ""), strings.Join(link, ""), strings.Join(desc, ""), "http://www.narro.co/images/narro-icon-lg.png")
 
@@ -62,7 +62,7 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 	c.SetiTunesAuthor(acct.Email)
 	c.SetiTunesSubtitle(strings.Join(desc, ""))
 	c.SetiTunesSummary(strings.Join(desc, ""))
-	c.SetiTunesOwner(acct.Username, acct.Email)
+	c.SetiTunesOwner(acct.Vanity, acct.Email)
 
 	for iter.Next(&result) {
 		linkList := listLinks(result.Links)
