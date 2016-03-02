@@ -16,22 +16,21 @@ import (
 )
 
 func main() {
-
 	ctl, err := NewController()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer ctl.session.Close()
 
 	goji.Get("/", http.RedirectHandler("http://www.narro.co", 301))
 	goji.Get("/:vanity", ctl.renderPodcast)
 	goji.Get("/:vanity/", ctl.renderPodcast)
 	goji.Serve()
-
 }
 
 func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
-	db := ctl.session.Clone().DB(os.Getenv("MONGO_DB"))
+	session := ctl.session.Clone()
+	defer session.Close()
+	db := session.DB(os.Getenv("MONGO_DB"))
 	result := Account{}
 	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
 	if err != nil {
