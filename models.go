@@ -9,6 +9,7 @@ import (
 type Account struct {
 	Id              bson.ObjectId `bson:"_id" json:"_id"`
 	Username        string
+	Image           string
 	Vanity          string
 	TunesCategories string
 	Email           string
