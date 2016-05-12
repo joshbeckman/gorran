@@ -21,7 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	goji.Get("/", http.RedirectHandler("http://www.narro.co", 301))
+	goji.Get("/", http.RedirectHandler("https://www.narro.co", 301))
 	goji.Get("/:vanity", ctl.renderPodcast)
 	goji.Get("/:vanity/", ctl.renderPodcast)
 	goji.Serve()
@@ -37,7 +37,7 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else {
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex()}).Sort("-created").Limit(25).Iter()
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true}).Sort("-created").Limit(25).Iter()
 		s := buildPodcast(iter, result)
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
@@ -69,7 +69,7 @@ func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
 
 	for iter.Next(&result) {
 		linkList := listLinks(result.Links)
-		resultLink := []string{"http://narro.co/article/", result.Id.Hex()}
+		resultLink := []string{"https://www.narro.co/article/", result.Id.Hex()}
 		resultDesc := []string{result.Description, result.Url, linkList}
 		i := &gopod.Item{
 			Title:         result.Title,
