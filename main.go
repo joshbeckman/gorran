@@ -42,7 +42,7 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		return
 	} else {
 		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true}).Sort("-created").Limit(25).Iter()
-		s := buildPodcast(iter, result)
+		s := buildPodcast(iter, result, result.Vanity)
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
 	}
@@ -58,8 +58,10 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else {
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "keywords": c.URLParams["topic"]}).Sort("-created").Limit(25).Iter()
-		s := buildPodcast(iter, result)
+		topic := c.URLParams["topic"]
+		name := []string{result.Vanity, "/", topic}
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "keywords": topic}).Sort("-created").Limit(25).Iter()
+		s := buildPodcast(iter, result, strings.Join(name, ""))
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
 	}
@@ -75,16 +77,18 @@ func (ctl *Controller) renderTopicPodcast(c web.C, w http.ResponseWriter, r *htt
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else {
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "topics.stem": c.URLParams["topic"]}).Sort("-created").Limit(25).Iter()
-		s := buildPodcast(iter, result)
+		topic := c.URLParams["topic"]
+		name := []string{result.Vanity, "/", topic}
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "topics.stem": topic}).Sort("-created").Limit(25).Iter()
+		s := buildPodcast(iter, result, strings.Join(name, ""))
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
 	}
 }
 
-func buildPodcast(iter *mgo.Iter, acct Account) *gopod.Channel {
+func buildPodcast(iter *mgo.Iter, acct Account, name string) *gopod.Channel {
 	var result Article
-	title := []string{acct.Vanity, " on Narro"}
+	title := []string{name, " on Narro"}
 	desc := []string{acct.Vanity, " uses Narro to create a podcast of articles transcribed to audio."}
 	link := []string{"http://on.narro.co/", acct.Vanity}
 	image := "https://www.narro.co/images/narro-icon-lg.png"
