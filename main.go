@@ -24,6 +24,10 @@ func main() {
 	goji.Get("/", http.RedirectHandler("https://www.narro.co", 301))
 	goji.Get("/:vanity", ctl.renderPodcast)
 	goji.Get("/:vanity/", ctl.renderPodcast)
+	goji.Get("/:vanity/topics/:topic", ctl.renderTopicPodcast)
+	goji.Get("/:vanity/topics/:topic/", ctl.renderTopicPodcast)
+	goji.Get("/:vanity/keywords/:topic", ctl.renderKeywordPodcast)
+	goji.Get("/:vanity/keywords/:topic/", ctl.renderKeywordPodcast)
 	goji.Serve()
 }
 
@@ -38,6 +42,40 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		return
 	} else {
 		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true}).Sort("-created").Limit(25).Iter()
+		s := buildPodcast(iter, result)
+		w.Header().Set("Content-Type", "application/rss+xml")
+		fmt.Fprintf(w, "%s", s.Publish())
+	}
+}
+
+func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
+	session := ctl.session.Clone()
+	defer session.Close()
+	db := session.DB(os.Getenv("MONGO_DB"))
+	result := Account{}
+	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	} else {
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "keywords": c.URLParams["topic"]}).Sort("-created").Limit(25).Iter()
+		s := buildPodcast(iter, result)
+		w.Header().Set("Content-Type", "application/rss+xml")
+		fmt.Fprintf(w, "%s", s.Publish())
+	}
+}
+
+func (ctl *Controller) renderTopicPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
+	session := ctl.session.Clone()
+	defer session.Close()
+	db := session.DB(os.Getenv("MONGO_DB"))
+	result := Account{}
+	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	} else {
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "topics.stem": c.URLParams["topic"]}).Sort("-created").Limit(25).Iter()
 		s := buildPodcast(iter, result)
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
