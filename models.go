@@ -11,7 +11,7 @@ type Account struct {
 	Username        string
 	Image           string
 	Vanity          string
-	TunesCategories string
+	TunesCategories string `bson:"itunesCategories"`
 	Email           string
 }
 
