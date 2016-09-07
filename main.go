@@ -104,11 +104,11 @@ func buildPodcast(iter *mgo.Iter, acct Account, name string) *gopod.Channel {
 	c.SetManagingEditor(acct.Email)
 	c.SetCopyright("All article content copyright of respective source authors.")
 	c.SetiTunesExplicit("no")
-	c.SetiTunesAuthor(acct.Email)
+	c.SetiTunesAuthor(acct.Vanity)
 	c.SetCategory(acct.TunesCategories)
 	c.SetiTunesSubtitle(strings.Join(desc, ""))
 	c.SetiTunesSummary(strings.Join(desc, ""))
-	c.SetiTunesOwner(acct.Vanity, acct.Email)
+	c.SetiTunesOwner(acct.Vanity, "josh@narro.co")
 
 	for iter.Next(&result) {
 		linkList := listLinks(result.Links)
