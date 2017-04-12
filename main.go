@@ -41,7 +41,7 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	} else {
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true}).Sort("-created").Limit(25).Iter()
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "deleted": false}).Sort("-created").Limit(25).Iter()
 		s := buildPodcast(iter, result, result.Vanity)
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
@@ -60,7 +60,7 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 	} else {
 		topic := c.URLParams["topic"]
 		name := []string{result.Vanity, "/", topic}
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "keywords": topic}).Sort("-created").Limit(25).Iter()
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "deleted": false, "keywords": topic}).Sort("-created").Limit(25).Iter()
 		s := buildPodcast(iter, result, strings.Join(name, ""))
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
@@ -79,7 +79,7 @@ func (ctl *Controller) renderTopicPodcast(c web.C, w http.ResponseWriter, r *htt
 	} else {
 		topic := c.URLParams["topic"]
 		name := []string{result.Vanity, "/", topic}
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "topics.stem": topic}).Sort("-created").Limit(25).Iter()
+		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "deleted": false, "topics.stem": topic}).Sort("-created").Limit(25).Iter()
 		s := buildPodcast(iter, result, strings.Join(name, ""))
 		w.Header().Set("Content-Type", "application/rss+xml")
 		fmt.Fprintf(w, "%s", s.Publish())
