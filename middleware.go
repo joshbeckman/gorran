@@ -2,24 +2,19 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/mgo.v2"
 	"os"
 )
 
 type Controller struct {
-	session *mgo.Session
+	dbURI string
 }
 
 func NewController() (*Controller, error) {
-	uri := os.Getenv("MONGO_URI")
+	uri := os.Getenv("DATABASE_URL")
 	if uri == "" {
 		return nil, fmt.Errorf("no DB connection string provided")
 	}
-	session, err := mgo.Dial(uri)
-	if err != nil {
-		return nil, err
-	}
 	return &Controller{
-		session: session,
+		dbURI: uri,
 	}, nil
 }

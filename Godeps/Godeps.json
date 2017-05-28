@@ -1,23 +1,24 @@
 {
 	"ImportPath": "github.com/jbckmn/gorran",
-	"GoVersion": "go1.6",
+	"GoVersion": "go1.8.1",
 	"Deps": [
 		{
 			"ImportPath": "github.com/jbckmn/gopod",
 			"Rev": "d1be98e6b50ba090541707d5cf874a48f5de8ed6"
 		},
 		{
+			"ImportPath": "github.com/jmoiron/sqlx",
+			"Comment": "sqlx-v1.1-123-gd9bd385",
+			"Rev": "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-166-g2704adc",
+			"Rev": "2704adc878c21e1329f46f6e56a1c387d788ff94"
+		},
+		{
 			"ImportPath": "github.com/zenazn/goji",
 			"Rev": "e3228e8322d760a7aad832bce70b7e11a3b2536c"
-		},
-		{
-			"ImportPath": "gopkg.in/mgo.v2",
-			"Rev": "445c05a1261a0941bc48d898c8eb3ee18ab398c3"
-		},
-		{
-			"ImportPath": "labix.org/v2/mgo/bson",
-			"Comment": "287",
-			"Rev": "gustavo@niemeyer.net-20140501184651-975yyw9ipld92pji"
 		}
 	]
 }
