@@ -1,34 +1,35 @@
 package main
 
 import (
-	"labix.org/v2/mgo/bson"
+	"database/sql"
+	"github.com/jmoiron/sqlx/types"
 	"time"
 )
 
 // Models
 type Account struct {
-	Id              bson.ObjectId `bson:"_id" json:"_id"`
+	Id              string `db:"_id" json:"_id"`
 	Username        string
 	Image           string
 	Vanity          string
-	TunesCategories string `bson:"itunesCategories"`
+	TunesCategories string `db:"itunesCategories"`
 	Email           string
 }
 
 type Article struct {
-	Id          bson.ObjectId `bson:"_id" json:"_id"`
+	Id          string `db:"_id" json:"_id"`
 	Title       string
-	Url         string
-	Mp3URL      string  `bson:"mp3URL"`
-	Mp3Length   float64 `bson:"mp3Length"`
+	Url         sql.NullString
+	Mp3URL      string  `db:"mp3URL"`
+	Mp3Length   float64 `db:"mp3Length"`
 	Description string
-	AccountId   string
+	AccountId   string `db:"accountId"`
 	Created     time.Time
-	Links       []*ArticleLink
+	Links       types.JSONText
 }
 
 type ArticleLink struct {
-	Id   bson.ObjectId `bson:"_id" json:"_id"`
+	Id   string `json: "_id" db:"_id"`
 	Href string
 	Text string
 }

@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 	"github.com/jbckmn/gopod"
+	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/types"
+	"github.com/lib/pq"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
-	"gopkg.in/mgo.v2"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -24,70 +24,66 @@ func main() {
 	goji.Get("/", http.RedirectHandler("https://www.narro.co", 301))
 	goji.Get("/:vanity", ctl.renderPodcast)
 	goji.Get("/:vanity/", ctl.renderPodcast)
-	goji.Get("/:vanity/topics/:topic", ctl.renderTopicPodcast)
-	goji.Get("/:vanity/topics/:topic/", ctl.renderTopicPodcast)
 	goji.Get("/:vanity/keywords/:topic", ctl.renderKeywordPodcast)
 	goji.Get("/:vanity/keywords/:topic/", ctl.renderKeywordPodcast)
 	goji.Serve()
 }
 
 func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
-	session := ctl.session.Clone()
-	defer session.Close()
-	db := session.DB(os.Getenv("MONGO_DB"))
-	result := Account{}
-	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
+	session, err := sqlx.Open("postgres", ctl.dbURI)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Fatal(err)
+		log.Fatal("unable to acquire DB connection")
 		return
-	} else {
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true}).Sort("-created").Limit(25).Iter()
-		s := buildPodcast(iter, result, result.Vanity)
-		w.Header().Set("Content-Type", "application/rss+xml")
-		fmt.Fprintf(w, "%s", s.Publish())
 	}
+	defer session.Close()
+	result := Account{}
+	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
+	if accountErr != nil {
+		log.Print("error getting account")
+		http.Error(w, accountErr.Error(), http.StatusNotFound)
+		return
+	}
+	limit := 25
+	rows, articlesErr := session.Queryx("SELECT _id, title, url, \"mp3URL\", \"mp3Length\", description, \"accountId\", created, links from articles WHERE active = true AND deleted = false and \"accountId\" = $1 ORDER BY created DESC LIMIT $2", result.Id, limit)
+	if articlesErr != nil {
+		log.Printf("unable to query DB for articles")
+		http.Error(w, articlesErr.Error(), http.StatusNotFound)
+		return
+	}
+	s := buildPodcast(rows, result, result.Vanity)
+	w.Header().Set("Content-Type", "application/rss+xml")
+	fmt.Fprintf(w, "%s", s.Publish())
 }
 
 func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
-	session := ctl.session.Clone()
-	defer session.Close()
-	db := session.DB(os.Getenv("MONGO_DB"))
-	result := Account{}
-	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
+	session, err := sqlx.Open("postgres", ctl.dbURI)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		log.Printf("unable to acquire DB connection")
 		return
-	} else {
-		topic := c.URLParams["topic"]
-		name := []string{result.Vanity, "/", topic}
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "keywords": topic}).Sort("-created").Limit(25).Iter()
-		s := buildPodcast(iter, result, strings.Join(name, ""))
-		w.Header().Set("Content-Type", "application/rss+xml")
-		fmt.Fprintf(w, "%s", s.Publish())
 	}
+	defer session.Close()
+	result := Account{}
+	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
+	if accountErr != nil {
+		http.Error(w, accountErr.Error(), http.StatusNotFound)
+		return
+	}
+	limit := 25
+	topics := strings.Split(c.URLParams["topic"], "+")
+	rows, articlesErr := session.Queryx("SELECT _id, title, url, \"mp3URL\", \"mp3Length\", description, \"accountId\", created, links from articles WHERE active = true AND deleted = false and \"accountId\" = $1 AND keywords ?& $2 ORDER BY created DESC LIMIT $3", result.Id, pq.Array(topics), limit)
+	if articlesErr != nil {
+		log.Printf("unable to query DB for articles")
+		http.Error(w, articlesErr.Error(), http.StatusNotFound)
+		return
+	}
+	name := []string{result.Vanity, c.URLParams["topic"]}
+	s := buildPodcast(rows, result, strings.Join(name, "/"))
+	w.Header().Set("Content-Type", "application/rss+xml")
+	fmt.Fprintf(w, "%s", s.Publish())
 }
 
-func (ctl *Controller) renderTopicPodcast(c web.C, w http.ResponseWriter, r *http.Request) {
-	session := ctl.session.Clone()
-	defer session.Close()
-	db := session.DB(os.Getenv("MONGO_DB"))
-	result := Account{}
-	err := db.C("accounts").Find(bson.M{"vanity": c.URLParams["vanity"]}).One(&result)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	} else {
-		topic := c.URLParams["topic"]
-		name := []string{result.Vanity, "/", topic}
-		iter := db.C("articles").Find(bson.M{"accountId": result.Id.Hex(), "active": true, "topics.stem": topic}).Sort("-created").Limit(25).Iter()
-		s := buildPodcast(iter, result, strings.Join(name, ""))
-		w.Header().Set("Content-Type", "application/rss+xml")
-		fmt.Fprintf(w, "%s", s.Publish())
-	}
-}
-
-func buildPodcast(iter *mgo.Iter, acct Account, name string) *gopod.Channel {
-	var result Article
+func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 	title := []string{name, " on Narro"}
 	desc := []string{acct.Vanity, " uses Narro to create a podcast of articles transcribed to audio."}
 	link := []string{"http://on.narro.co/", acct.Vanity}
@@ -110,10 +106,19 @@ func buildPodcast(iter *mgo.Iter, acct Account, name string) *gopod.Channel {
 	c.SetiTunesSummary(strings.Join(desc, ""))
 	c.SetiTunesOwner(acct.Vanity, "josh@narro.co")
 
-	for iter.Next(&result) {
+	for iter.Next() {
+		result := Article{}
+		if err := iter.StructScan(&result); err != nil {
+			log.Printf("error scanning article struct")
+			log.Fatal(err)
+		}
 		linkList := listLinks(result.Links)
-		resultLink := []string{"https://www.narro.co/article/", result.Id.Hex()}
-		resultDesc := []string{result.Description, result.Url, linkList}
+		resultLink := []string{"https://www.narro.co/article/", result.Id}
+		url := ""
+		if result.Url.Valid {
+			url = result.Url.String
+		}
+		resultDesc := []string{result.Description, url, linkList}
 		i := &gopod.Item{
 			Title:         result.Title,
 			Link:          strings.Join(resultLink, ""),
@@ -131,16 +136,18 @@ func buildPodcast(iter *mgo.Iter, acct Account, name string) *gopod.Channel {
 		c.AddItem(i)
 	}
 	if err := iter.Close(); err != nil {
-		fmt.Printf(err.Error())
+		log.Printf(err.Error())
 	}
 
 	return c
 }
 
-func listLinks(Links []*ArticleLink) string {
-	results := make([]string, len(Links)+2)
+func listLinks(LinksJSON types.JSONText) string {
+	links := make([]ArticleLink, 0)
+	LinksJSON.Unmarshal(&links)
+	results := make([]string, len(links)+2)
 	results = append(results, "<ul class=\"linkList\">")
-	for _, r := range Links {
+	for _, r := range links {
 		link := "<li><a href=\"first\">second</a></li>"
 		link = strings.Replace(link, "first", r.Href, 1)
 		link = strings.Replace(link, "second", r.Text, 1)
