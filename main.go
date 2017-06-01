@@ -88,8 +88,10 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 	desc := []string{acct.Vanity, " uses Narro to create a podcast of articles transcribed to audio."}
 	link := []string{"http://on.narro.co/", acct.Vanity}
 	image := "https://www.narro.co/images/narro-icon-lg.png"
-	if acct.Image != "" {
-		image = acct.Image
+	if acct.Image.Valid {
+		if acct.Image.String != "" {
+			image = acct.Image.String
+		}
 	}
 	c := gopod.ChannelFactory(strings.Join(title, ""), strings.Join(link, ""), strings.Join(desc, ""), image)
 
@@ -101,7 +103,11 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 	c.SetCopyright("All article content copyright of respective source authors.")
 	c.SetiTunesExplicit("no")
 	c.SetiTunesAuthor(acct.Vanity)
-	c.SetCategory(acct.TunesCategories)
+	TunesCategories := ""
+	if acct.TunesCategories.Valid {
+		TunesCategories = acct.TunesCategories.String
+	}
+	c.SetCategory(TunesCategories)
 	c.SetiTunesSubtitle(strings.Join(desc, ""))
 	c.SetiTunesSummary(strings.Join(desc, ""))
 	c.SetiTunesOwner(acct.Vanity, "josh@narro.co")

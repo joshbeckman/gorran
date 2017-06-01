@@ -10,9 +10,9 @@ import (
 type Account struct {
 	Id              string `db:"_id" json:"_id"`
 	Username        string
-	Image           string
+	Image           sql.NullString
 	Vanity          string
-	TunesCategories string `db:"itunesCategories"`
+	TunesCategories sql.NullString `db:"itunesCategories"`
 	Email           string
 }
 
