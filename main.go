@@ -44,7 +44,7 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		http.Error(w, accountErr.Error(), http.StatusNotFound)
 		return
 	}
-	limit := 25
+	limit := 200
 	rows, articlesErr := session.Queryx("SELECT _id, title, url, \"mp3URL\", \"mp3Length\", description, \"accountId\", created, links from articles WHERE active = true AND deleted = false and \"accountId\" = $1 ORDER BY created DESC LIMIT $2", result.Id, limit)
 	if articlesErr != nil {
 		log.Printf("unable to query DB for articles")
