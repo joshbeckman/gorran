@@ -120,6 +120,7 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 		}
 		linkList := listLinks(result.Links)
 		resultLink := []string{"https://www.narro.co/article/", result.Id}
+		enclosureLink := []string{"https://www.narro.co/article/", result.Id, ".mp3"}
 		url := ""
 		if result.Url.Valid {
 			url = result.Url.String
@@ -138,7 +139,7 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 			TunesSummary:  strings.Join(resultDesc, " ... "),
 			TunesExplicit: "no",
 		}
-		i.SetEnclosure(result.Mp3URL, strconv.FormatFloat(result.Mp3Length, 'f', 0, 64), "audio/mpeg")
+		i.SetEnclosure(strings.Join(enclosureLink, ""), strconv.FormatFloat(result.Mp3Length, 'f', 0, 64), "audio/mpeg")
 		c.AddItem(i)
 	}
 	if err := iter.Close(); err != nil {
