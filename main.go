@@ -123,7 +123,8 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 		enclosureLink := []string{"https://www.narro.co/article/", result.Id, ".mp3"}
 		url := ""
 		if result.Url.Valid {
-			url = result.Url.String
+			urlPieces := []string{"<a href=\"", result.Url.String, "\">", result.Url.String, "</a>"}
+			url = strings.Join(urlPieces, "")
 		}
 		resultDesc := []string{result.Description, url, linkList}
 		i := &gopod.Item{
