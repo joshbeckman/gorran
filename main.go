@@ -38,7 +38,7 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 	}
 	defer session.Close()
 	result := Account{}
-	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
+	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email, \"podcastTitle\", \"podcastDescription\" FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
 	if accountErr != nil {
 		log.Print("error getting account")
 		http.Error(w, accountErr.Error(), http.StatusNotFound)
@@ -64,7 +64,7 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 	}
 	defer session.Close()
 	result := Account{}
-	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
+	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email, \"podcastTitle\", \"podcastDescription\" FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
 	if accountErr != nil {
 		http.Error(w, accountErr.Error(), http.StatusNotFound)
 		return
@@ -84,16 +84,28 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 }
 
 func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
-	title := []string{name, " on Narro"}
-	desc := []string{acct.Vanity, " uses Narro to create a podcast of articles transcribed to audio."}
-	link := []string{"http://on.narro.co/", acct.Vanity}
+	titlePieces := []string{name, " on Narro"}
+	title := strings.Join(titlePieces, "")
+	descPieces := []string{acct.Vanity, " uses Narro to create a podcast of articles transcribed to audio."}
+	desc := strings.Join(descPieces, "")
+	link := []string{"https://on.narro.co/", acct.Vanity}
 	image := "https://www.narro.co/images/narro-icon-lg.png"
 	if acct.Image.Valid {
 		if acct.Image.String != "" {
 			image = acct.Image.String
 		}
 	}
-	c := gopod.ChannelFactory(strings.Join(title, ""), strings.Join(link, ""), strings.Join(desc, ""), image)
+	if acct.PodcastTitle.Valid {
+		if acct.PodcastTitle.String != "" {
+			title = acct.PodcastTitle.String
+		}
+	}
+	if acct.PodcastDescription.Valid {
+		if acct.PodcastDescription.String != "" {
+			desc = acct.PodcastDescription.String
+		}
+	}
+	c := gopod.ChannelFactory(title, strings.Join(link, ""), desc, image)
 
 	c.SetTTL("20") // in minutes
 	c.SetPubDate(time.Now().UTC().Format(time.RFC1123))
@@ -108,8 +120,8 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 		TunesCategories = acct.TunesCategories.String
 	}
 	c.SetCategory(TunesCategories)
-	c.SetiTunesSubtitle(strings.Join(desc, ""))
-	c.SetiTunesSummary(strings.Join(desc, ""))
+	c.SetiTunesSubtitle(desc)
+	c.SetiTunesSummary(desc)
 	c.SetiTunesOwner(acct.Vanity, "josh@narro.co")
 
 	for iter.Next() {

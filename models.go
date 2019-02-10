@@ -8,12 +8,14 @@ import (
 
 // Models
 type Account struct {
-	Id              string `db:"_id" json:"_id"`
-	Username        string
-	Image           sql.NullString
-	Vanity          string
-	TunesCategories sql.NullString `db:"itunesCategories"`
-	Email           string
+	Id                 string `db:"_id" json:"_id"`
+	Username           string
+	Image              sql.NullString
+	Vanity             string
+	TunesCategories    sql.NullString `db:"itunesCategories"`
+	Email              string
+	PodcastTitle       sql.NullString `db:"podcastTitle"`
+	PodcastDescription sql.NullString `db:"podcastDescription"`
 }
 
 type Article struct {
@@ -29,7 +31,7 @@ type Article struct {
 }
 
 type ArticleLink struct {
-	Id   string `json: "_id" db:"_id"`
+	Id   string `db:"_id" json:"_id"`
 	Href string
 	Text string
 }
