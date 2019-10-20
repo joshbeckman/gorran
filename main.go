@@ -37,18 +37,16 @@ func (ctl *Controller) renderPodcast(c web.C, w http.ResponseWriter, r *http.Req
 		return
 	}
 	defer session.Close()
-	result := Account{}
-	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email, \"podcastTitle\", \"podcastDescription\" FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
+	result, accountErr := findRequestAccountByVanity(c, r, session)
 	if accountErr != nil {
-		log.Print("error getting account")
-		http.Error(w, accountErr.Error(), http.StatusNotFound)
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 	limit := 200
 	rows, articlesErr := session.Queryx("SELECT _id, title, url, \"mp3URL\", \"mp3Length\", description, \"accountId\", created, links from articles WHERE active = true AND deleted = false and \"accountId\" = $1 ORDER BY created DESC LIMIT $2", result.Id, limit)
 	if articlesErr != nil {
 		log.Printf("unable to query DB for articles")
-		http.Error(w, articlesErr.Error(), http.StatusNotFound)
+		http.Error(w, articlesErr.Error(), http.StatusInternalServerError)
 		return
 	}
 	s := buildPodcast(rows, result, result.Vanity)
@@ -63,10 +61,9 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 		return
 	}
 	defer session.Close()
-	result := Account{}
-	accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email, \"podcastTitle\", \"podcastDescription\" FROM accounts WHERE vanity = $1", c.URLParams["vanity"]).StructScan(&result)
+	result, accountErr := findRequestAccountByVanity(c, r, session)
 	if accountErr != nil {
-		http.Error(w, accountErr.Error(), http.StatusNotFound)
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 	limit := 25
@@ -74,7 +71,7 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 	rows, articlesErr := session.Queryx("SELECT _id, title, url, \"mp3URL\", \"mp3Length\", description, \"accountId\", created, links from articles WHERE active = true AND deleted = false and \"accountId\" = $1 AND keywords ?& $2 ORDER BY created DESC LIMIT $3", result.Id, pq.Array(topics), limit)
 	if articlesErr != nil {
 		log.Printf("unable to query DB for articles")
-		http.Error(w, articlesErr.Error(), http.StatusNotFound)
+		http.Error(w, articlesErr.Error(), http.StatusInternalServerError)
 		return
 	}
 	name := []string{result.Vanity, c.URLParams["topic"]}
