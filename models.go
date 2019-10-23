@@ -1,8 +1,12 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"github.com/jmoiron/sqlx/types"
+	"strings"
 	"time"
 )
 
@@ -16,6 +20,7 @@ type Account struct {
 	Email              string
 	PodcastTitle       sql.NullString `db:"podcastTitle"`
 	PodcastDescription sql.NullString `db:"podcastDescription"`
+	PodcastPassword    sql.NullString `db:"podcastPassword"`
 }
 
 type Article struct {
@@ -28,6 +33,21 @@ type Article struct {
 	AccountId   string `db:"accountId"`
 	Created     time.Time
 	Links       types.JSONText
+}
+
+func (article *Article) enclosureURL(acct Account) string {
+	if !acct.PodcastPassword.Valid {
+		return strings.Join([]string{"https://www.narro.co/article/", article.Id, ".mp3"}, "")
+	}
+	if acct.PodcastPassword.Valid {
+		if acct.PodcastPassword.String == "" {
+			return strings.Join([]string{"https://www.narro.co/article/", article.Id, ".mp3"}, "")
+		}
+	}
+	h := hmac.New(sha256.New, []byte(acct.PodcastPassword.String))
+	h.Write([]byte(article.Id))
+	token := strings.Join([]string{"?token=", hex.EncodeToString(h.Sum(nil))}, "")
+	return strings.Join([]string{"https://www.narro.co/article/", article.Id, ".mp3", token}, "")
 }
 
 type ArticleLink struct {
