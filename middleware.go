@@ -24,7 +24,7 @@ func NewController() (*Controller, error) {
 
 func findRequestAccountByVanity(c web.C, r *http.Request, session *sqlx.DB) (Account, error) {
 	result := Account{}
-	user, pass, ok := r.BasicAuth()
+	_, pass, ok := r.BasicAuth()
 	if !ok {
 		accountErr := session.QueryRowx("SELECT _id, username, image, vanity, \"itunesCategories\", email, \"podcastTitle\", \"podcastDescription\" FROM accounts WHERE vanity = $1 AND \"podcastPassword\" is NULL", c.URLParams["vanity"]).StructScan(&result)
 		return result, accountErr
