@@ -64,7 +64,8 @@ func (ctl *Controller) renderKeywordPodcast(c web.C, w http.ResponseWriter, r *h
 	defer session.Close()
 	result, accountErr := findRequestAccountByVanity(c, r, session)
 	if accountErr != nil {
-		http.Error(w, "Not Found", http.StatusNotFound)
+		w.Header().Add("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s"`, "Narro"))
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	limit := 25
