@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"github.com/jmoiron/sqlx/types"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -36,18 +37,23 @@ type Article struct {
 }
 
 func (article *Article) enclosureURL(acct Account) string {
+	wavExt, _ := regexp.MatchString(".wav$", article.Mp3URL)
+	extension := ".mp3"
+	if wavExt {
+	    extension = ".wav"
+	}
 	if !acct.PodcastPassword.Valid {
-		return strings.Join([]string{"https://www.narro.co/article/", article.Id, ".mp3"}, "")
+		return strings.Join([]string{"https://www.narro.co/article/", article.Id, extension}, "")
 	}
 	if acct.PodcastPassword.Valid {
 		if acct.PodcastPassword.String == "" {
-			return strings.Join([]string{"https://www.narro.co/article/", article.Id, ".mp3"}, "")
+			return strings.Join([]string{"https://www.narro.co/article/", article.Id, extension}, "")
 		}
 	}
 	h := hmac.New(sha256.New, []byte(acct.PodcastPassword.String))
 	h.Write([]byte(article.Id))
 	token := strings.Join([]string{"?token=", hex.EncodeToString(h.Sum(nil))}, "")
-	return strings.Join([]string{"https://www.narro.co/article/", article.Id, ".mp3", token}, "")
+	return strings.Join([]string{"https://www.narro.co/article/", article.Id, extension, token}, "")
 }
 
 type ArticleLink struct {
