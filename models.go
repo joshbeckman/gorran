@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"github.com/jmoiron/sqlx/types"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/jmoiron/sqlx/types"
 )
 
 // Models
@@ -40,7 +41,7 @@ func (article *Article) enclosureURL(acct Account) string {
 	wavExt, _ := regexp.MatchString(".wav$", article.Mp3URL)
 	extension := ".mp3"
 	if wavExt {
-	    extension = ".wav"
+		extension = ".wav"
 	}
 	if !acct.PodcastPassword.Valid {
 		return strings.Join([]string{"https://www.narro.co/article/", article.Id, extension}, "")

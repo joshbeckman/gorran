@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/jbckmn/gopod"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/types"
 	"github.com/lib/pq"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
-	"log"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -150,7 +152,12 @@ func buildPodcast(iter *sqlx.Rows, acct Account, name string) *gopod.Channel {
 			TunesSummary:  strings.Join(resultDesc, " ... "),
 			TunesExplicit: "no",
 		}
-		i.SetEnclosure(result.enclosureURL(acct), strconv.FormatFloat(result.Mp3Length, 'f', 0, 64), "audio/mpeg")
+		wavExt, _ := regexp.MatchString(".wav$", result.Mp3URL)
+		encoding := "audio/mpeg"
+		if wavExt {
+			encoding = "audio/wav"
+		}
+		i.SetEnclosure(result.enclosureURL(acct), strconv.FormatFloat(result.Mp3Length, 'f', 0, 64), encoding)
 		c.AddItem(i)
 	}
 	if err := iter.Close(); err != nil {
